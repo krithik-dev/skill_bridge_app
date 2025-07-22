@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 const Page2Screen: React.FC = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.pageText}>Page 2</Text>
+      <Text style={styles.pageText}>Page 2 screen 2</Text>
     </View>
   );
 };
