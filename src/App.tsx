@@ -1,28 +1,24 @@
 import React from 'react';
-import { AuthProvider, useAuth } from './AuthContext';
-import AuthScreen from './AuthScreen';
-import HomeScreen from './HomeScreen';
-import { View, ActivityIndicator } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import HomeScreen from '../src/HomeScreen';
+import VideoScreen from '../src/VideoScreen';
 
-const AppContent: React.FC = () => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  return user ? <HomeScreen /> : <AuthScreen />;
+export type RootStackParamList = {
+  Home: undefined;
+  Video: { videoId: string };
 };
 
-const App: React.FC = () => {
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const App = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Video" component={VideoScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 
