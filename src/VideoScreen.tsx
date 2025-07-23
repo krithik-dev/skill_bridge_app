@@ -30,13 +30,12 @@ const VideoPlayer = ({ videoId }: { videoId: string }) => {
 
 const TabPage1 = () => <View style={styles.tabPage}></View>;
 const TabPage2 = () => <View style={styles.tabPage}></View>;
-const TabPage3 = () => <View style={styles.tabPage}></View>;
+
 
 const VideoTabs = () => (
   <Tab.Navigator>
     <Tab.Screen name="Page 1" component={TabPage1} />
     <Tab.Screen name="Page 2" component={TabPage2} />
-    <Tab.Screen name="Page 3" component={TabPage3} />
   </Tab.Navigator>
 );
 
