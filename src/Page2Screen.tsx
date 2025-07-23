@@ -30,7 +30,23 @@ const fetchGeminiLinks = async (searchTerm: string) => {
           {
             parts: [
               {
-                text: `Give exactly 5 direct free course links from MIT and 5 from Harvard about "${searchTerm}". Respond ONLY in raw JSON array like this: [ { "title": "Course Title", "link": "https://example.com" }, ... ]`
+                text: `Find 3 actual free courses from Harvard (edX, Harvard Extension, or Harvard OpenCourseWare) and 3 from MIT (MIT OpenCourseWare or edX) related to "${searchTerm}". 
+
+For each course, provide:
+1. The exact course title as it appears on the website
+2. The direct URL to the course page
+3. Make sure these are real, accessible courses
+
+Respond in this exact JSON format:
+[
+  {
+    "title": "Exact Course Title",
+    "link": "https://actual-course-url.com",
+    "institution": "Harvard" or "MIT"
+  }
+]
+
+Only include courses that are currently available and free to audit or access. Do not create fictional links.`
               }
             ]
           }
@@ -44,24 +60,117 @@ const fetchGeminiLinks = async (searchTerm: string) => {
     );
 
     const rawText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const jsonMatch = rawText.match(/\[\s*{[\s\S]*?}\s*\]/);
+    console.log('Gemini Raw Response:', rawText);
+    
+    // Try to extract JSON from the response
+    let jsonMatch = rawText.match(/\[\s*{[\s\S]*?}\s*\]/);
+    
     if (!jsonMatch) {
-      console.warn('Gemini response:', rawText);
-      throw new Error('No JSON array found in Gemini response');
+      // If no JSON array found, try to extract individual course information
+      const coursePattern = /(?:title|Title):\s*"([^"]+)"[\s\S]*?(?:link|Link|URL|url):\s*"([^"]+)"/g;
+      const courses = [];
+      let match;
+      
+      while ((match = coursePattern.exec(rawText)) !== null && courses.length < 6) {
+        courses.push({
+          title: match[1],
+          link: match[2],
+          institution: courses.length < 3 ? 'Harvard' : 'MIT'
+        });
+      }
+      
+      if (courses.length > 0) {
+        return courses;
+      }
+      
+      // Fallback: provide some known free courses
+      return [
+        {
+          title: "CS50's Introduction to Computer Science",
+          link: "https://cs50.harvard.edu/x/",
+          institution: "Harvard"
+        },
+        {
+          title: "Introduction to Data Science with Python",
+          link: "https://www.edx.org/course/introduction-to-data-science-with-python",
+          institution: "Harvard"
+        },
+        {
+          title: "CS50's Web Programming with Python and JavaScript",
+          link: "https://cs50.harvard.edu/web/",
+          institution: "Harvard"
+        },
+        {
+          title: "Introduction to Computer Science and Programming Using Python",
+          link: "https://www.edx.org/course/introduction-to-computer-science-and-programming-7",
+          institution: "MIT"
+        },
+        {
+          title: "Calculus 1A: Differentiation",
+          link: "https://www.edx.org/course/calculus-1a-differentiation",
+          institution: "MIT"
+        },
+        {
+          title: "Introduction to Algorithms",
+          link: "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/",
+          institution: "MIT"
+        }
+      ];
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
-    return parsed;
+    
+    // Validate that we have valid links
+    const validCourses = parsed.filter((course: { title: string; link: string; institution?: string }) => 
+      course.link && 
+      course.title && 
+      (course.link.startsWith('http://') || course.link.startsWith('https://'))
+    );
+    
+    return validCourses.length > 0 ? validCourses : [];
   } catch (error) {
     console.error('Gemini API Error:', error);
-    return [];
+    
+    // Return fallback courses if API fails
+    return [
+      {
+        title: "CS50's Introduction to Computer Science",
+        link: "https://cs50.harvard.edu/x/",
+        institution: "Harvard"
+      },
+      {
+        title: "Introduction to Data Science with Python",
+        link: "https://www.edx.org/course/introduction-to-data-science-with-python",
+        institution: "Harvard"
+      },
+      {
+        title: "CS50's Web Programming with Python and JavaScript",
+        link: "https://cs50.harvard.edu/web/",
+        institution: "Harvard"
+      },
+      {
+        title: "Introduction to Computer Science and Programming Using Python",
+        link: "https://www.edx.org/course/introduction-to-computer-science-and-programming-7",
+        institution: "MIT"
+      },
+      {
+        title: "Machine Learning with Python",
+        link: "https://www.edx.org/course/machine-learning-with-python-from-linear-models-to",
+        institution: "MIT"
+      },
+      {
+        title: "Introduction to Algorithms",
+        link: "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/",
+        institution: "MIT"
+      }
+    ];
   }
 };
 
 const Page2Screen = () => {
   const [query, setQuery] = useState('');
   const [videos, setVideos] = useState([]);
-  const [geminiLinks, setGeminiLinks] = useState<{ title: string; link: string }[]>([]);
+  const [geminiLinks, setGeminiLinks] = useState<{ title: string; link: string; institution?: string }[]>([]);
   const navigation = useNavigation<NavigationProp>();
 
   const searchYouTube = async (searchTerm: string) => {
@@ -137,12 +246,28 @@ const Page2Screen = () => {
                 key={index}
                 onPress={() => Linking.openURL(item.link)}
                 style={{
-                  paddingVertical: 8,
-                  borderBottomWidth: 1,
-                  borderColor: '#ddd',
+                  paddingVertical: 12,
+                  paddingHorizontal: 8,
+                  marginVertical: 4,
+                  backgroundColor: '#fff',
+                  borderRadius: 6,
+                  borderLeftWidth: 3,
+                  borderLeftColor: item.institution === 'Harvard' ? '#A51C30' : '#8A1538',
                 }}
               >
-                <Text style={{ color: '#007AFF' }}>{item.title}</Text>
+                <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 14 }}>
+                  {item.title}
+                </Text>
+                {item.institution && (
+                  <Text style={{ 
+                    color: '#666', 
+                    fontSize: 12, 
+                    marginTop: 2,
+                    fontStyle: 'italic' 
+                  }}>
+                    {item.institution}
+                  </Text>
+                )}
               </TouchableOpacity>
             ))
           ) : (
